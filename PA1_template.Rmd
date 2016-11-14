@@ -1,5 +1,6 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+author : "Phillip Hardwick"
 output: 
   html_document:
     keep_md: true
@@ -7,11 +8,53 @@ output:
 
 
 ## Loading and preprocessing the data
+```{r}
+reprorepo <- read.csv("activity.csv")
+uni_d <- unique(reprorepo$date)
 
+dsums_dt <- data.frame(uni_d)
+for(i in 1:length(dsums_dt$uni_d)){
+  dsums_dt$sums[i] <- sum(reprorepo$steps[which(reprorepo$date==dsums_dt$uni_d[i])])
+  dsums_dt$median[i] <- median(reprorepo$steps[which(reprorepo$date==dsums_dt$uni_d[i])])
+  dsums_dt$mean[i] <- mean(reprorepo$steps[which(reprorepo$date==dsums_dt$uni_d[i])])
+}
+```
+
+
+## histogram of the total number of steps taken each day
+
+```{r}
+hist(dsums_dt$sums)
+```
+
+
+## Median, Mean, and Sum Values per Day
+```{r}
+dsums_dt
+```
+
+```{r}
+repro_interval_dt <- data.frame(int = unique(reprorepo$interval))
+for(i in 1: length(repro_interval_dt$int)){
+  repro_interval_dt$int_mean[i] <- mean(reprorepo$steps[which(reprorepo$interval==repro_interval_dt$int[i])],na.rm = TRUE)
+}
+```
 
 
 ## What is mean total number of steps taken per day?
 
+## Average number of steps taken averaged across all days
+
+```{r}
+plot(repro_interval_dt$int_mean~repro_interval_dt$int,type="l",ylab="Average Number of Steps",xlab="Time Interval", asp=4,col.lab = "blue",cex=1)
+
+```
+
+
+## Interval with highest number of steps
+```{r}
+repro_interval_dt$int[which(repro_interval_dt$int_mean == max(repro_interval_dt$int_mean))]
+```
 
 
 ## What is the average daily activity pattern?
@@ -20,6 +63,58 @@ output:
 
 ## Imputing missing values
 
+## Number of NA values in dataset
+```{r}
+  sum(is.na(reprorepo$steps))
+```
 
+## Missing values filled in by using mean data per interval, new copy of dataset created, mean and median calculated
+```{r}
+reprorepo_copy <- reprorepo
+reprorepo_copy$steps <- with(reprorepo, ave(steps, interval,FUN = function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))))
+newsums_dt <- data.frame(uni_d)
+for(i in 1:length(newsums_dt$uni_d)){
+  newsums_dt$sums[i] <- sum(reprorepo_copy$steps[which(reprorepo_copy$date==newsums_dt$uni_d[i])])
+  newsums_dt$median[i] <- median(reprorepo_copy$steps[which(reprorepo_copy$date==newsums_dt$uni_d[i])])
+  newsums_dt$mean[i] <- mean(reprorepo_copy$steps[which(reprorepo_copy$date==newsums_dt$uni_d[i])])
+}
+```
+
+## Mean and median values 
+
+```{r}
+  newsums_dt
+```
+
+## Histogram of data with NA data replaced
+```{r}
+  hist(newsums_dt$sums)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+## Derive day of week from Date and assign factor of either weekend or weekday
+```{r}
+  reprorepo_copy$date <- as.Date(reprorepo_copy$date,"%Y-%m-%d")
+weekend_days <- c("Saturday","Sunday")
+reprorepo_copy$part_of_week <- factor((weekdays(reprorepo_copy$date) %in% weekend_days), levels=c(FALSE, TRUE), labels=c('weekday', 'weekend'))
+repro_nona_weekend <- data.frame(int = unique(reprorepo_copy$interval))   
+repro_nona_weekday <- data.frame(int = unique(reprorepo_copy$interval))
+for(i in 1: length(repro_nona_weekend$int)){
+  repro_nona_weekend$int_mean[i] <-mean(reprorepo_copy$steps[which(reprorepo_copy$part_of_week == 'weekend' & reprorepo_copy$interval == repro_nona_weekend$int[i])])
+
+}
+for(i in 1: length(repro_nona_weekday$int)){
+  repro_nona_weekday$int_mean[i] <-mean(reprorepo_copy$steps[which(reprorepo_copy$part_of_week == 'weekday' & reprorepo_copy$interval == repro_nona_weekday$int[i])])
+  
+}
+```
+
+## Plot comparing weekend and weekday activity
+```{r}
+par(mfrow = c(2, 1))
+par(cex = .4)
+par(col.lab = "red")
+plot(repro_nona_weekday$int_mean~repro_nona_weekday$int,type="l",main = "weekday",ylab="Average Number of Steps",xlab = "",asp = 4)
+plot(repro_nona_weekend$int_mean~repro_nona_weekend$int,type="l",main = "weekend",ylab="Average Number of Steps",xlab="Time Interval", asp = 4)
+```
